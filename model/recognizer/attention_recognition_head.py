@@ -27,14 +27,14 @@ class AttentionRecognitionHead(nn.Module):
     x, targets, lengths = x
     batch_size = x.size(0)
     # Decoder
-    state = torch.zeros(1, batch_size, self.sDim).cuda()
+    state = torch.zeros(1, batch_size, self.sDim).cpu()
     outputs = []
 
     for i in range(max(lengths)):
       if i == 0:
-        y_prev = torch.zeros((batch_size)).fill_(self.num_classes).cuda() # the last one is used as the <BOS>.
+        y_prev = torch.zeros((batch_size)).fill_(self.num_classes).cpu() # the last one is used as the <BOS>.
       else:
-        y_prev = targets[:,i-1].cuda()
+        y_prev = targets[:,i-1].cpu()
 
       output, state = self.decoder(x, state, y_prev)
       outputs.append(output)
@@ -78,17 +78,17 @@ class AttentionRecognitionHead(nn.Module):
     inflated_encoder_feats = x.unsqueeze(1).permute((1,0,2,3)).repeat((beam_width,1,1,1)).permute((1,0,2,3)).contiguous().view(-1, l, d)
 
     # Initialize the decoder
-    state = torch.zeros(1, batch_size * beam_width, self.sDim).cuda()
-    pos_index = (torch.Tensor(range(batch_size)) * beam_width).long().view(-1, 1).cuda()
+    state = torch.zeros(1, batch_size * beam_width, self.sDim).cpu()
+    pos_index = (torch.Tensor(range(batch_size)) * beam_width).long().view(-1, 1).cpu()
 
     # Initialize the scores
-    sequence_scores = torch.Tensor(batch_size * beam_width, 1).cuda()
+    sequence_scores = torch.Tensor(batch_size * beam_width, 1).cpu()
     sequence_scores.fill_(-float('Inf'))
-    sequence_scores.index_fill_(0, torch.Tensor([i * beam_width for i in range(0, batch_size)]).long().cuda(), 0.0)
+    sequence_scores.index_fill_(0, torch.Tensor([i * beam_width for i in range(0, batch_size)]).long().cpu(), 0.0)
     # sequence_scores.fill_(0.0)
 
     # Initialize the input vector
-    y_prev = torch.zeros((batch_size * beam_width)).fill_(self.num_classes).cuda()
+    y_prev = torch.zeros((batch_size * beam_width)).fill_(self.num_classes).cpu()
 
     # Store decisions for backtracking
     stored_scores          = list()
@@ -210,7 +210,7 @@ class AttentionUnit(nn.Module):
     init.constant_(self.wEmbed.bias, 0)
 
   def forward(self, x, sPrev):
-    sPrev = sPrev.cuda()
+    sPrev = sPrev.cpu()
     batch_size, T, _ = x.size()                      # [b x T x xDim]
     x = x.contiguous().view(-1, self.xDim)                        # [(b x T) x xDim]
     xProj = self.xEmbed(x)                           # [(b x T) x attDim]
@@ -256,12 +256,12 @@ class DecoderUnit(nn.Module):
     init.constant_(self.fc.bias, 0)
 
   def forward(self, x, sPrev, yPrev):
-    sPrev = sPrev.cuda()
+    sPrev = sPrev.cpu()
     # x: feature sequence from the image decoder.
     batch_size, T, _ = x.size()
     alpha = self.attention_unit(x, sPrev)
     context = torch.bmm(alpha.unsqueeze(1), x).squeeze(1)
-    yPrev = yPrev.cuda()
+    yPrev = yPrev.cpu()
     yProj = self.tgt_embedding(yPrev.long())
     self.gru.flatten_parameters()
     output, state = self.gru(torch.cat([yProj, context], 1).unsqueeze(1), sPrev)

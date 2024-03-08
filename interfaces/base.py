@@ -38,7 +38,7 @@ class TextBase(object):
 
         self.resume = config.TRAIN.resume
         self.batch_size = self.config.TRAIN.batch_size
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu")
         alpha_dict = {
             'digit': string.digits,
             'lower': string.digits + string.ascii_lowercase,
@@ -138,7 +138,7 @@ class TextBase(object):
                     model_dict = torch.load(resume)['state_dict_G']
                     model.load_state_dict(model_dict, strict=False)
                 else:
-                    loaded_state_dict = torch.load(resume)['state_dict_G']
+                    loaded_state_dict = torch.load(resume, map_location=torch.device("cpu"))['state_dict_G']
                     model.load_state_dict(loaded_state_dict)
             else:
                 model_dict = torch.load(resume)['state_dict_G']
@@ -265,10 +265,10 @@ class TextBase(object):
         cfg = self.config.TRAIN
         alphabet = ':'.join(string.digits+string.ascii_lowercase+'$')
         MORAN = moran.MORAN(1, len(alphabet.split(':')), 256, 32, 100, BidirDecoder=True,
-                            inputDataType='torch.cuda.FloatTensor', CUDA=True)
+                            inputDataType='torch.FloatTensor', CUDA=False)
         model_path = self.config.TRAIN.VAL.moran_pretrained
         print('loading pre-trained moran model from %s' % model_path)
-        state_dict = torch.load(model_path)
+        state_dict = torch.load(model_path, map_location=torch.device("cpu"))
         MORAN_state_dict_rename = OrderedDict()
         for k, v in state_dict.items():
             name = k.replace("module.", "")  # remove `module.`
@@ -306,7 +306,7 @@ class TextBase(object):
         aster_info = AsterInfo(cfg.voc_type)
         model_path = recognizer_path if not recognizer_path is None else self.config.TRAIN.VAL.crnn_pretrained
         print('loading pretrained crnn model from %s' % model_path)
-        stat_dict = torch.load(model_path)
+        stat_dict = torch.load(model_path, map_location=torch.device("cpu"))
         if recognizer_path is None:
             model.load_state_dict(stat_dict)
         else:
@@ -356,7 +356,7 @@ class TextBase(object):
         aster = recognizer.RecognizerBuilder(arch='ResNet_ASTER', rec_num_classes=aster_info.rec_num_classes,
                                              sDim=512, attDim=512, max_len_labels=aster_info.max_len,
                                              eos=aster_info.char2id[aster_info.EOS], STN_ON=True)
-        aster.load_state_dict(torch.load(self.config.TRAIN.VAL.rec_pretrained)['state_dict'])
+        aster.load_state_dict(torch.load(self.config.TRAIN.VAL.rec_pretrained, map_location=torch.device("cpu"))['state_dict'])
         print('load pred_trained aster model from %s' % self.config.TRAIN.VAL.rec_pretrained)
         aster = aster.to(self.device)
         aster = torch.nn.DataParallel(aster, device_ids=range(cfg.ngpu))
