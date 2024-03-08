@@ -284,33 +284,47 @@ class lmdbDataset_real(Dataset):
                  rotate=None
                  ):
         super(lmdbDataset_real, self).__init__()
-        self.env = lmdb.open(
-            root,
-            max_readers=1,
-            readonly=True,
-            lock=False,
-            readahead=False,
-            meminit=False)
+        # self.env = lmdb.open(
+        #     root,
+        #     max_readers=1,
+        #     readonly=True,
+        #     lock=False,
+        #     readahead=False,
+        #     meminit=False)
 
         self.cb_flag = cutblur
         self.rotate = rotate
 
-        if not self.env:
-            print('cannot creat lmdb from %s' % (root))
-            sys.exit(0)
-
-        with self.env.begin(write=False) as txn:
-            nSamples = int(txn.get(b'num-samples'))
-            self.nSamples = nSamples
-            print("nSamples:", nSamples)
+        # if not self.env:
+        #     print('cannot creat lmdb from %s' % (root))
+        #     sys.exit(0)
+        #
+        # with self.env.begin(write=False) as txn:
+        #     nSamples = int(txn.get(b'num-samples'))
+        #     self.nSamples = nSamples
+        #     print("nSamples:", nSamples)
         self.voc_type = voc_type
         self.max_len = max_len
         self.test = test
 
         self.manmade_degrade = manmade_degrade
 
+        self.image_dir = root
+        # self.transform = transforms.Compose([
+        #     transforms.Resize((16, 64)),
+        #     transforms.ToTensor(),
+        # ])
+
+        # self.image_files = glob('*.png', root_dir=self.image_dir) + glob('*.jpg', root_dir=self.image_dir) + glob('*.jpeg', root_dir=self.image_dir)
+        self.image_files = []
+        for _, _, f in os.walk(self.image_dir):
+            for file in f:
+                if file.endswith(('.png', '.jpg', '.jpeg')):
+                    self.image_files.append(file)
+
     def __len__(self):
-        return self.nSamples
+        # return self.nSamples
+        return len(self.image_files)
 
     def rotate_img(self, image, angle):
         if not angle == 0.0:
@@ -347,22 +361,25 @@ class lmdbDataset_real(Dataset):
 
     def __getitem__(self, index):
         assert index <= len(self), 'index range error'
-        index += 1
-        txn = self.env.begin(write=False)
+        # index += 1
+        # txn = self.env.begin(write=False)
         label_key = b'label-%09d' % index
         word = ""# str(txn.get(label_key).decode())
         # print("in dataset....")
         img_HR_key = b'image_hr-%09d' % index  # 128*32
         img_lr_key = b'image_lr-%09d' % index  # 64*16
         try:
-            img_HR = buf2PIL(txn, img_HR_key, 'RGB')
-            if self.manmade_degrade:
-                img_lr = degradation(img_HR)
-            else:
-                img_lr = buf2PIL(txn, img_lr_key, 'RGB')
+            # if self.manmade_degrade:
+            #     img_lr = degradation(img_HR)
+            # else:
+            #     img_lr = buf2PIL(txn, img_lr_key, 'RGB')
+            image_path = os.path.join(self.image_dir, self.image_files[index])
+            img_lr = Image.open(image_path).convert('RGB')
+            img_HR = img_lr
+
             # print("GOGOOGO..............", img_HR.size)
-            if self.cb_flag and not self.test:
-                img_lr = self.cutblur(img_HR, img_lr)
+            # if self.cb_flag and not self.test:
+            #     img_lr = self.cutblur(img_HR, img_lr)
 
             if not self.rotate is None:
 
@@ -371,8 +388,8 @@ class lmdbDataset_real(Dataset):
                 else:
                     angle = 0 #self.rotate
 
-                # img_HR = self.rotate_img(img_HR, angle)
-                # img_lr = self.rotate_img(img_lr, angle)
+                img_HR = self.rotate_img(img_HR, angle)
+                img_lr = self.rotate_img(img_lr, angle)
 
             img_lr_np = np.array(img_lr).astype(np.uint8)
             img_lry = cv2.cvtColor(img_lr_np, cv2.COLOR_RGB2YUV)
@@ -381,18 +398,19 @@ class lmdbDataset_real(Dataset):
             img_HR_np = np.array(img_HR).astype(np.uint8)
             img_HRy = cv2.cvtColor(img_HR_np, cv2.COLOR_RGB2YUV)
             img_HRy = Image.fromarray(img_HRy)
-            word = txn.get(label_key)
-            if word is None:
-                print("None word:", label_key)
-                word = " "
-            else:
-                word = str(word.decode())
+            # word = txn.get(label_key)
+            word=" "
+            # if word is None:
+            #     print("None word:", label_key)
+            #     word = " "
+            # else:
+            #     word = str(word.decode())
             # print("img_HR:", img_HR.size, img_lr.size())
 
         except IOError or len(word) > self.max_len:
             return self[index + 1]
         label_str = str_filt(word, self.voc_type)
-        return img_HR, img_lr, img_HRy, img_lry, label_str
+        return img_HR, img_lr, img_HRy, img_lry, self.image_files[index]
 
 
 class lmdbDataset_realIC15(Dataset):

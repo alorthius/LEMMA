@@ -239,7 +239,7 @@ class TextSR(base.TextBase):
                     self.save_checkpoint(model_list, epoch, iters, best_history_acc, best_model_info, False, converge_list, recognizer=None)
             lr_scheduler.step()
 
-    def eval(self, model_list, val_loader, image_crit, index, aster, aster_info, data_name=None):
+    def eval(self, save_dir, model_list, val_loader, image_crit, index, aster, aster_info, data_name=None):
         n_correct_lr = 0
         n_correct_hr = 0
         sum_images = 0
@@ -273,6 +273,7 @@ class TextSR(base.TextBase):
             # print("label_strs:", label_strs)
             images_lr = images_lrraw.to(self.device)
             images_hr = images_hrraw.to(self.device)
+            filenames = label_strs
 
 
             val_batch_size = images_lr.shape[0]
@@ -280,6 +281,21 @@ class TextSR(base.TextBase):
             sr_infer_time += ret_dict["duration"]
 
             images_sr = ret_dict["images_sr"]
+
+            img_sr = images_sr[0]
+            # save_dir = "/home/anbondaret/PycharmProjects/avery-super-resolution/text_data/hr_lemma"
+            print(save_dir)
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+
+            for i, image in enumerate(img_sr):
+                image_np = image.permute(1, 2, 0).numpy()
+                image_np = image_np[:, :, :3]
+                image_np = cv2.cvtColor(image_np, cv2.COLOR_RGB2BGR)
+                cv2.imwrite(os.path.join(save_dir, f"{filenames[i]}"), np.clip(image_np * 255, 0, 255))
+
+            return
+
 
             # == 首先解析输入图像为文本识别器的输入形式 =======
             aster_dict_lr = aster[0]["data_in_fn"](images_lr[:, :3, :, :])
@@ -506,7 +522,7 @@ class TextSR(base.TextBase):
 
 
 
-    def test(self):
+    def test(self, save_dir):
         total_acc = {}
         val_dataset_list, val_loader_list = self.get_val_data()
         model_dict = self.generator_init()
@@ -574,6 +590,7 @@ class TextSR(base.TextBase):
                     p.requires_grad = False
 
             metrics_dict = self.eval(
+                save_dir,
                 model_list,
                 val_loader,
                 image_crit,
@@ -582,10 +599,10 @@ class TextSR(base.TextBase):
                 aster_info,
                 data_name
             )
-            acc = float(metrics_dict['accuracy'])
-            total_acc[data_name]=acc
-            logging.info('best_%s = %.2f%%' % (data_name, acc * 100))
-        logging.info('avg_acc(Easy,Medium,Hard) is {:.3f}'.format(100*(total_acc['easy']*1619
-                                                              +total_acc['medium']*1411
-                                                              +total_acc['hard']*1343)/(1343+1411+1619)))
+            # acc = float(metrics_dict['accuracy'])
+            # total_acc[data_name]=acc
+            # logging.info('best_%s = %.2f%%' % (data_name, acc * 100))
+        # logging.info('avg_acc(Easy,Medium,Hard) is {:.3f}'.format(100*(total_acc['easy']*1619
+        #                                                       +total_acc['medium']*1411
+        #                                                       +total_acc['hard']*1343)/(1343+1411+1619)))
         logging.info('Test with recognizer {} finished!'.format(self.args.test_model))

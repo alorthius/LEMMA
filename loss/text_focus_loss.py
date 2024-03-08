@@ -39,7 +39,7 @@ def load_confuse_matrix():
     rearrange_data = np.concatenate((pad, rearrange_data), axis=1)
     rearrange_data = 1 / rearrange_data
     rearrange_data[rearrange_data==np.inf] = 1
-    rearrange_data = torch.Tensor(rearrange_data).cuda()
+    rearrange_data = torch.Tensor(rearrange_data)
 
     lower_alpha = 'abcdefghijklmnopqrstuvwxyz'
     # upper_alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -553,7 +553,7 @@ class TextFocusLoss(nn.Module):
 
     def build_up_transformer(self):
         transformer = Transformer()
-        transformer.load_state_dict(torch.load(self.cfg.pretrained_trans))
+        transformer.load_state_dict(torch.load(self.cfg.pretrained_trans, map_location=torch.device('cpu')))
         transformer.eval()
         transformer = nn.DataParallel(transformer,device_ids=range(self.cfg.ngpu))
         self.transformer = transformer
