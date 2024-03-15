@@ -3,27 +3,27 @@ import os
 from datetime import datetime
 import pickle
 import copy
-from utils import util, ssim_psnr
+# from utils import util, ssim_psnr
 from IPython import embed
 import torch.nn.functional as F
 import cv2
-from interfaces import base
-from utils.metrics import get_string_aster, get_string_crnn, Accuracy,get_string_abinet,get_string_parseq
-from utils.util import str_filt
+from external.LEMMA.interfaces import base
+# from utils.metrics import get_string_aster, get_string_crnn, Accuracy,get_string_abinet,get_string_parseq
+# from utils.util import str_filt
 import numpy as np
 from ptflops import get_model_complexity_info
 import editdistance
 import time
 import logging
-from dataset.dataset import Lable2Tensor
+# from dataset.dataset import Lable2Tensor
 from torch import optim as optim
 import lpips
-import setup
-from model.parseq.parseq_tokenizer import get_parseq_tokenize
-parseq_tokenizer = get_parseq_tokenize()
+import external.LEMMA.setup as setup
+# from model.parseq.parseq_tokenizer import get_parseq_tokenize
+# parseq_tokenizer = get_parseq_tokenize()
 abi_charset = setup.CharsetMapper()
-label2tensor = Lable2Tensor()
-ssim = ssim_psnr.SSIM()
+# label2tensor = Lable2Tensor()
+# ssim = ssim_psnr.SSIM()
 lpips_vgg = lpips.LPIPS(net="vgg")
 
 class TextSR(base.TextBase):
@@ -239,7 +239,7 @@ class TextSR(base.TextBase):
                     self.save_checkpoint(model_list, epoch, iters, best_history_acc, best_model_info, False, converge_list, recognizer=None)
             lr_scheduler.step()
 
-    def eval(self, save_dir, model_list, val_loader, image_crit, index, aster, aster_info, data_name=None):
+    def eval(self, model_list, val_loader, image_crit, index, aster, aster_info, data_name=None):
         n_correct_lr = 0
         n_correct_hr = 0
         sum_images = 0
@@ -283,10 +283,6 @@ class TextSR(base.TextBase):
             images_sr = ret_dict["images_sr"]
 
             img_sr = images_sr[0]
-            # save_dir = "/home/anbondaret/PycharmProjects/avery-super-resolution/text_data/hr_lemma"
-            print(save_dir)
-            if not os.path.exists(save_dir):
-                os.makedirs(save_dir)
 
             for i, image in enumerate(img_sr):
                 image_np = image.permute(1, 2, 0).numpy()
@@ -522,7 +518,7 @@ class TextSR(base.TextBase):
 
 
 
-    def test(self, save_dir):
+    def test(self):
         total_acc = {}
         val_dataset_list, val_loader_list = self.get_val_data()
         model_dict = self.generator_init()
@@ -590,7 +586,6 @@ class TextSR(base.TextBase):
                     p.requires_grad = False
 
             metrics_dict = self.eval(
-                save_dir,
                 model_list,
                 val_loader,
                 image_crit,

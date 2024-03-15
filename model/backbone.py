@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 
-from model.resnet import resnet45
-from model.transformer import (PositionalEncoding,
+from external.LEMMA.model.resnet import resnet45
+from external.LEMMA.model.transformer import (PositionalEncoding,
                         TransformerEncoder,
                          TransformerEncoderLayer)
 

@@ -19,7 +19,7 @@ class CharsetMapper(object):
     """
 
     def __init__(self,
-                 filename='./dataset/charset_36.txt',
+                 filename='external/LEMMA/dataset/charset_36.txt',
                  max_length=30,
                  null_char=u'\u2591'):
         """Creates a lookup table.
