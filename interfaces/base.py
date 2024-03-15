@@ -9,20 +9,20 @@ from PIL import Image
 import torchvision
 from torchvision import transforms
 from collections import OrderedDict
-from model.ABINet import abinet
+# from model.ABINet import abinet
 import ptflops
-from model import recognizer
-from model import moran
-from model import crnn
-from dataset import lmdbDataset_real,alignCollate_realWTL, alignCollate_realWTLAMask
-from loss import text_focus_loss
-from model.parseq.parseq import PARSeq
-from model.MATRN import matrn
-from utils.labelmaps import get_vocabulary, labels2strs
-from model.lemma import LEMMA
+# from model import recognizer
+# from model import moran
+# from model import crnn
+from external.LEMMA.dataset import lmdbDataset_real,alignCollate_realWTL, alignCollate_realWTLAMask
+# from loss import text_focus_loss
+# from model.parseq.parseq import PARSeq
+# from model.MATRN import matrn
+# from utils.labelmaps import get_vocabulary, labels2strs
+from external.LEMMA.model.lemma import LEMMA
 sys.path.append('../')
-from utils import ssim_psnr, utils_moran, utils_crnn
-import dataset.dataset as dataset
+# from utils import ssim_psnr, utils_moran, utils_crnn
+import external.LEMMA.dataset.dataset as dataset
 
 
 class TextBase(object):
@@ -44,7 +44,7 @@ class TextBase(object):
             'lower': string.digits + string.ascii_lowercase,
             'upper': string.digits + string.ascii_letters,
             'all': string.digits + string.ascii_letters + string.punctuation,
-            'chinese': open("al_chinese.txt", "r",encoding='UTF-8').readlines()[0].replace("\n", "")
+            'chinese': open("external/LEMMA/al_chinese.txt", "r",encoding='UTF-8').readlines()[0].replace("\n", "")
         }
         self.test_data_dir = self.config.TEST.test_data_dir
         self.voc_type = self.config.TRAIN.voc_type
@@ -52,14 +52,14 @@ class TextBase(object):
         self.max_len = config.TRAIN.max_len
         self.vis_dir = self.config.TRAIN.VAL.vis_dir
         self.ckpt_path = os.path.join('ckpt', self.vis_dir)
-        self.cal_psnr = ssim_psnr.calculate_psnr
-        self.cal_ssim = ssim_psnr.SSIM()
-        self.cal_psnr_weighted = ssim_psnr.weighted_calculate_psnr
-        self.cal_ssim_weighted = ssim_psnr.SSIM_WEIGHTED()
+        # self.cal_psnr = ssim_psnr.calculate_psnr
+        # self.cal_ssim = ssim_psnr.SSIM()
+        # self.cal_psnr_weighted = ssim_psnr.weighted_calculate_psnr
+        # self.cal_ssim_weighted = ssim_psnr.SSIM_WEIGHTED()
         self.mask = self.args.mask
         alphabet_moran = ':'.join(string.digits+string.ascii_lowercase+'$')
-        self.converter_moran = utils_moran.strLabelConverterForAttention(alphabet_moran, ':')
-        self.converter_crnn = utils_crnn.strLabelConverter(string.digits + string.ascii_lowercase)
+        # self.converter_moran = utils_moran.strLabelConverterForAttention(alphabet_moran, ':')
+        # self.converter_crnn = utils_crnn.strLabelConverter(string.digits + string.ascii_lowercase)
 
     def get_train_data(self):
         cfg = self.config.TRAIN
@@ -121,11 +121,11 @@ class TextBase(object):
         model = LEMMA(scale_factor=self.scale_factor, width=cfg.width, height=cfg.height,
                       STN=self.args.STN, mask=self.mask, srb_nums=self.args.srb,
                       cfg = self.config)
-        image_crit = text_focus_loss.TextFocusLoss(self.config.TRAIN)
+        # image_crit = text_focus_loss.TextFocusLoss(self.config.TRAIN)
 
         model = model.to(self.device)
 
-        image_crit.to(self.device)
+        # image_crit.to(self.device)
         if cfg.ngpu > 1:
             print("multi_gpu", self.device)
             model = torch.nn.DataParallel(model, device_ids=range(cfg.ngpu))
@@ -150,7 +150,8 @@ class TextBase(object):
                 else:
                     model.load_state_dict(
                     {'module.' + k: v for k, v in torch.load(resume)['state_dict_G'].items()})
-        return {'model': model, 'crit': image_crit}
+        # return {'model': model, 'crit': image_crit}
+        return {'model': model}
 
 
     def optimizer_init(self, model):

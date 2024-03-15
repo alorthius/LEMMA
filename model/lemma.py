@@ -2,7 +2,7 @@ import math
 import torch
 import torch.nn.functional as F
 from torch import nn
-from model.Position_aware_module import PositionAwareModule,Location_enhancement_Multimodal_alignment
+from external.LEMMA.model.Position_aware_module import PositionAwareModule,Location_enhancement_Multimodal_alignment
 from .tps_spatial_transformer import TPSSpatialTransformer
 from .stn_head import STNHead
 from torchvision import transforms

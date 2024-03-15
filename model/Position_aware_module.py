@@ -1,6 +1,6 @@
 import logging
 import torch
-from model.transformer import (PositionalEncoding,
+from external.LEMMA.model.transformer import (PositionalEncoding,
                          MultiheadAttention,
                          TransformerDecoder,
                          TransformerDecoderLayer,
@@ -8,10 +8,10 @@ from model.transformer import (PositionalEncoding,
                          TransformerEncoder,
                          TransformerDecoderLayer_QKV,
                          TransformerDecoder_QKV)
-from setup import CharsetMapper
-from model.attention import *
-from model.backbone import ResTranformer
-from model.resnet import resnet45
+from external.LEMMA.setup import CharsetMapper
+from external.LEMMA.model.attention import *
+from external.LEMMA.model.backbone import ResTranformer
+from external.LEMMA.model.resnet import resnet45
 from torch.nn import functional as F
 
 

@@ -9,7 +9,7 @@ from setup import Logger
 def main(config, args):
     Mission = TextSR(config, args)
     if args.test:
-        Mission.test(args.save_dir)
+        Mission.test()
     else:
         Mission.train()
 
